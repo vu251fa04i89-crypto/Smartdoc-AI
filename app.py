@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 EMBEDDING_MODEL = "gemini-embedding-001"
-GENERATION_MODEL = "gemini-2.5-flash"
+GENERATION_MODEL = "gemini-3.8-flash"
 
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 150
