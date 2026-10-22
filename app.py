@@ -62,6 +62,39 @@ supabase, user = render_auth()
 
 if user is None:
     st.stop()
+if "active_chat_id" not in st.session_state:
+    st.session_state.active_chat_id = None
+    
+user_id = user.id
+
+with st.sidebar:
+    st.divider()
+    st.subheader("Chat History")
+
+    if st.button("＋ New Chat", use_container_width=True):
+        chat = create_conversation(supabase, user_id)
+
+        if chat:
+            st.session_state.active_chat_id = chat["id"]
+            st.rerun()
+
+    try:
+        conversations = load_conversations(supabase, user_id)
+
+        for chat in conversations:
+            title = chat.get("title") or "New chat"
+
+            if st.button(
+                title,
+                key=f"chat_{chat['id']}",
+                use_container_width=True
+            ):
+                st.session_state.active_chat_id = chat["id"]
+                st.rerun()
+
+    except Exception as e:
+        st.error(f"Could not load chat history: {e}")
+        
 
 EMBEDDING_MODEL = "gemini-embedding-001"
 GENERATION_MODEL = "gemini-3.8-flash"
