@@ -7,6 +7,50 @@ from google.genai import types
 from pypdf import PdfReader
 from docx import Document
 from auth import render_auth 
+def load_conversations(supabase, user_id):
+    result = (
+        supabase.table("conversations")
+        .select("id, title, updated_at")
+        .eq("user_id", user_id)
+        .order("updated_at", desc=True)
+        .execute()
+    )
+    return result.data or []
+
+
+def create_conversation(supabase, user_id):
+    result = (
+        supabase.table("conversations")
+        .insert({
+            "user_id": user_id,
+            "title": "New chat"
+        })
+        .execute()
+    )
+    return result.data[0] if result.data else None
+
+
+def load_messages(supabase, user_id, conversation_id):
+    result = (
+        supabase.table("messages")
+        .select("id, role, content, created_at")
+        .eq("user_id", user_id)
+        .eq("conversation_id", conversation_id)
+        .order("created_at")
+        .execute()
+    )
+    return result.data or []
+
+
+def save_message(
+    supabase, user_id, conversation_id, role, content
+):
+    supabase.table("messages").insert({
+        "user_id": user_id,
+        "conversation_id": conversation_id,
+        "role": role,
+        "content": content
+    }).execute()
 
 st.set_page_config(
     page_title="SmartDoc AI",
