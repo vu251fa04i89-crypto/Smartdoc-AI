@@ -7,6 +7,8 @@ from google.genai import types
 from pypdf import PdfReader
 from docx import Document
 from auth import render_auth 
+
+
 def load_conversations(supabase, user_id):
     result = (
         supabase.table("conversations")
