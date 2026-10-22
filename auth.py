@@ -150,12 +150,9 @@ def render_auth():
                             "to confirm it, then log in here."
                         )
 
-                except Exception:
-                    st.error(
-                        "Sign-up failed. Check the email and "
-                        "try again. If it persists, check the "
-                        "Supabase authentication settings."
-                    )
+                                except Exception as e:
+                    st.error(f"Sign-up failed: {e}")
+                    
 
     return client, None
   
