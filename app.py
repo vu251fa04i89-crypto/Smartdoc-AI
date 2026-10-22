@@ -6,12 +6,18 @@ from google import genai
 from google.genai import types
 from pypdf import PdfReader
 from docx import Document
+from auth import render_auth 
 
 st.set_page_config(
     page_title="SmartDoc AI",
     page_icon="📚",
     layout="wide",
 )
+
+supabase, user = render_auth()
+
+if user is None:
+    st.stop()
 
 EMBEDDING_MODEL = "gemini-embedding-001"
 GENERATION_MODEL = "gemini-3.8-flash"
