@@ -1,4 +1,3 @@
-
 import streamlit as st
 from supabase import create_client
 
@@ -32,7 +31,11 @@ def render_auth():
 
     if access_token and refresh_token:
         try:
-            client.auth.set_session(access_token, refresh_token)
+            client.auth.set_session(
+                access_token,
+                refresh_token
+            )
+
             response = client.auth.get_user()
             user = response.user
 
@@ -43,11 +46,15 @@ def render_auth():
                 with st.sidebar:
                     st.write(f"Signed in: {user.email}")
 
-                    if st.button("Log out", use_container_width=True):
+                    if st.button(
+                        "Log out",
+                        use_container_width=True
+                    ):
                         try:
                             client.auth.sign_out()
                         finally:
                             clear_saved_session()
+
                         st.rerun()
 
                 return client, user
@@ -65,16 +72,23 @@ def render_auth():
     with login_tab:
         with st.form("login_form"):
             email = st.text_input("Email address")
+
             password = st.text_input(
-                "Password", type="password"
+                "Password",
+                type="password"
             )
+
             login_clicked = st.form_submit_button(
-                "Log in", use_container_width=True
+                "Log in",
+                use_container_width=True
             )
 
         if login_clicked:
             if not email.strip() or not password:
-                st.warning("Enter your email and password.")
+                st.warning(
+                    "Enter your email and password."
+                )
+
             else:
                 try:
                     result = client.auth.sign_in_with_password({
@@ -85,49 +99,65 @@ def render_auth():
                     session = result.session
 
                     if session:
-                        st.session_state["sb_access_token"] = (
-                            session.access_token
-                        )
-                        st.session_state["sb_refresh_token"] = (
-                            session.refresh_token
-                        )
-                        st.rerun()
-                    else:
-                        st.error("Login did not return a session.")
+                        st.session_state[
+                            "sb_access_token"
+                        ] = session.access_token
 
-                except Exception:
+                        st.session_state[
+                            "sb_refresh_token"
+                        ] = session.refresh_token
+
+                        st.rerun()
+
+                    else:
+                        st.error(
+                            "Login did not return a session."
+                        )
+
+                except Exception as e:
                     st.error(
-                        "Login failed. Check your details and "
-                        "confirm your email if required."
+                        f"Login failed: {e}"
                     )
 
     with signup_tab:
         with st.form("signup_form"):
             new_email = st.text_input(
-                "Email address", key="signup_email"
+                "Email address",
+                key="signup_email"
             )
+
             new_password = st.text_input(
                 "Create password",
                 type="password",
-                key="signup_password",
+                key="signup_password"
             )
+
             confirm_password = st.text_input(
                 "Confirm password",
-                type="password",
+                type="password"
             )
+
             signup_clicked = st.form_submit_button(
-                "Create account", use_container_width=True
+                "Create account",
+                use_container_width=True
             )
 
         if signup_clicked:
             if not new_email.strip():
-                st.warning("Enter your email address.")
+                st.warning(
+                    "Enter your email address."
+                )
+
             elif len(new_password) < 8:
                 st.warning(
                     "Use a password with at least 8 characters."
                 )
+
             elif new_password != confirm_password:
-                st.warning("The passwords do not match.")
+                st.warning(
+                    "The passwords do not match."
+                )
+
             else:
                 try:
                     result = client.auth.sign_up({
@@ -136,23 +166,31 @@ def render_auth():
                     })
 
                     if result.session:
-                        st.session_state["sb_access_token"] = (
-                            result.session.access_token
+                        st.session_state[
+                            "sb_access_token"
+                        ] = result.session.access_token
+
+                        st.session_state[
+                            "sb_refresh_token"
+                        ] = result.session.refresh_token
+
+                        st.success(
+                            "Account created."
                         )
-                        st.session_state["sb_refresh_token"] = (
-                            result.session.refresh_token
-                        )
-                        st.success("Account created.")
+
                         st.rerun()
+
                     else:
                         st.success(
-                            "Account created! Check your email "
-                            "to confirm it, then log in here."
+                            "Account created! "
+                            "Check your email to confirm it, "
+                            "then log in here."
                         )
 
-                                except Exception as e:
-                    st.error(f"Sign-up failed: {e}")
-                    
+                except Exception as e:
+                    st.error(
+                        f"Sign-up failed: {e}"
+                    )
 
     return client, None
-  
+
