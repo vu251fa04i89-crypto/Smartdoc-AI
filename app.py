@@ -17,7 +17,7 @@ from auth import render_auth
 # =========================================================
 
 st.set_page_config(
-    page_title="SmartDoc AI",
+    page_title="Smartdoc-AI",
     page_icon="📚",
     layout="wide",
 )
