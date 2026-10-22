@@ -221,7 +221,147 @@ ANSWER:
         "the available models. Please try again later.\n\n"
         "Technical details:\n" + "\n".join(errors)
     )
-    
+# Main SmartDoc AI interface
+st.title("📚 SmartDoc AI")
+
+st.write(
+    "Upload your study notes and ask questions. "
+    "Get AI answers with references to relevant passages."
+)
+
+with st.sidebar:
+    st.header("Your documents")
+
+    files = st.file_uploader(
+        "Upload PDF or DOCX files",
+        type=["pdf", "docx"],
+        accept_multiple_files=True,
+    )
+
+    process = st.button(
+        "Process documents",
+        type="primary",
+        use_container_width=True,
+    )
+
+    st.caption("Scanned PDFs may require OCR.")
+
+
+if process:
+    if not files:
+        st.warning("Upload at least one document first.")
+    else:
+        try:
+            client = get_client()
+            pages = []
+
+            with st.spinner("Reading your documents..."):
+                for file in files:
+                    extracted = extract_document(file)
+
+                    if not extracted:
+                        st.warning(
+                            f"No readable text found in {file.name}."
+                        )
+
+                    pages.extend(extracted)
+
+            chunks = make_chunks(pages)
+
+            if not chunks:
+                st.error(
+                    "No readable text found. Try a text-based PDF."
+                )
+            else:
+                with st.spinner("Creating document embeddings..."):
+                    vectors = embed_texts(
+                        client,
+                        [c["text"] for c in chunks],
+                        "RETRIEVAL_DOCUMENT",
+                    )
+
+                st.session_state["chunks"] = chunks
+                st.session_state["vectors"] = vectors
+                st.session_state["document_names"] = [
+                    file.name for file in files
+                ]
+
+                st.success(
+                    f"Processed {len(chunks)} document chunks!"
+                )
+
+        except Exception as error:
+            st.error(f"Document processing failed: {error}")
+
+
+if "chunks" in st.session_state:
+    st.subheader("Ask your documents")
+
+    st.caption(
+        "Loaded files: "
+        + ", ".join(st.session_state.get("document_names", []))
+    )
+
+    question = st.text_input(
+        "Your question",
+        placeholder="What is database normalization?",
+    )
+
+    if st.button("Ask SmartDoc AI"):
+        if not question.strip():
+            st.warning("Please enter a question.")
+        else:
+            try:
+                client = get_client()
+
+                with st.spinner("Searching relevant passages..."):
+                    results = retrieve(
+                        question,
+                        client,
+                        st.session_state["chunks"],
+                        st.session_state["vectors"],
+                    )
+
+                with st.spinner("Generating your answer..."):
+                    answer = generate_answer(
+                        question, results, client
+                    )
+
+                st.subheader("Answer")
+                st.markdown(answer)
+
+                st.subheader("Retrieved sources")
+
+                for number, item in enumerate(results, start=1):
+                    page = (
+                        f"Page {item['page']}"
+                        if item["page"] is not None
+                        else "Page unavailable"
+                    )
+
+                    with st.expander(
+                        f"[S{number}] {item['source']} — {page}"
+                    ):
+                        st.write(item["text"])
+                        st.caption(
+                            f"Cosine similarity: {item['score']:.3f}"
+                        )
+
+            except Exception as error:
+                st.error(f"Could not generate an answer: {error}")
+
+else:
+    st.info(
+        "Upload documents in the sidebar and tap "
+        "'Process documents' to begin."
+    )
+
+st.divider()
+st.caption(
+    "SmartDoc AI is a study aid. Verify important answers "
+    "against the original documents."
+                    )
+
 
 
         
