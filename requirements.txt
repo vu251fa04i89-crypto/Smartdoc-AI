@@ -3,4 +3,11 @@ google-genai
 pypdf
 python-docx
 numpy
-supabase 
+supabase
+pymupdf
+python-pptx
+openpyxl
+pandas
+pillow
+streamlit-mic-recorder
+gTTS
