@@ -34,6 +34,87 @@ CHUNK_OVERLAP = 150
 TOP_K = 4
 STORAGE_BUCKET = "user-documents"
 
+# Supabase pgvector configuration
+VECTOR_TABLE = "document_chunks"
+VECTOR_DIMENSIONS = 768
+
+
+def save_document_chunks(
+    supabase, user_id, document_id, chunks, vectors
+):
+    """Save document chunks and their embeddings to Supabase."""
+
+    # Remove previous chunks for this document before reprocessing.
+    (
+        supabase.table(VECTOR_TABLE)
+        .delete()
+        .eq("user_id", user_id)
+        .eq("document_id", document_id)
+        .execute()
+    )
+
+    rows = []
+
+    for index, (chunk, vector) in enumerate(zip(chunks, vectors)):
+        # pgvector accepts an embedding formatted as a vector string.
+        embedding = "[" + ",".join(
+            str(float(value)) for value in vector
+        ) + "]"
+
+        rows.append({
+            "user_id": user_id,
+            "document_id": document_id,
+            "chunk_index": index,
+            "content": chunk["text"],
+            "embedding": embedding,
+        })
+
+    # Insert in batches to avoid oversized database requests.
+    for start in range(0, len(rows), 100):
+        supabase.table(VECTOR_TABLE).insert(
+            rows[start:start + 100]
+        ).execute()
+
+
+def retrieve_from_vector_db(
+    supabase, user_id, question, client, document_lookup
+):
+    """Retrieve relevant saved chunks using Supabase pgvector."""
+
+    query_vector = embed_texts(
+        client, [question], "RETRIEVAL_QUERY"
+    )[0]
+
+    embedding = "[" + ",".join(
+        str(float(value)) for value in query_vector
+    ) + "]"
+
+    response = supabase.rpc(
+        "match_document_chunks",
+        {
+            "query_embedding": embedding,
+            "match_user_id": str(user_id),
+            "match_count": TOP_K,
+        },
+    ).execute()
+
+    results = []
+
+    for item in response.data or []:
+        document = document_lookup.get(
+            str(item["document_id"]), {}
+        )
+
+        results.append({
+            "text": item["content"],
+            "source": document.get("file_name", "Saved document"),
+            "page": None,
+            "score": float(item["similarity"]),
+        })
+
+    return results
+    
+
 
 # =========================================================
 # AUTHENTICATION
